@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="NOTEZ">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#FF6B42">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; object-src 'none'">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>NOTEZ</title>
+<style>
+:root{--bg:#FFF0E8;--card:#FFF8F4;--ink:#3B2620;--muted:#8E6E62;--a:#FF6B42;--a2:#FF7850;--line:#F3D9CC;--bad:#C8341B;
+--sh:8px 8px 20px rgba(205,128,98,.30),-6px -6px 16px rgba(255,255,255,.95);--in:inset 4px 4px 9px rgba(205,128,98,.22),inset -4px -4px 9px rgba(255,255,255,.9);color-scheme:light}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif}
+body{padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);-webkit-user-select:none;user-select:none}
+input,textarea,select{-webkit-user-select:text;user-select:text}
+.view{display:none;min-height:100%;padding:14px 16px 96px;animation:in .28s ease}
+.view.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.view{animation:none}}
+.bar{display:flex;align-items:center;gap:10px;margin:4px 0 14px}
+.bar h1{flex:1;margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em}
+.bar h1 small{font-size:15px;color:var(--muted);font-weight:600}
+.clay{background:var(--card);border-radius:24px;box-shadow:var(--sh)}
+button{font:inherit;font-weight:700;border:0;border-radius:18px;padding:12px 16px;color:var(--ink);background:var(--card);box-shadow:var(--sh);cursor:pointer;transition:transform .15s,box-shadow .15s}
+button:active{transform:scale(.96);box-shadow:var(--in)}
+button.pri{color:#fff;background:linear-gradient(145deg,var(--a2),var(--a));box-shadow:6px 6px 16px rgba(255,107,66,.40),-5px -5px 14px rgba(255,255,255,.9),inset 2px 2px 4px rgba(255,255,255,.35)}
+button.ic{width:46px;height:46px;padding:0;border-radius:50%;font-size:20px;flex:none}
+button.bad{color:var(--bad)}
+button.sm{padding:8px 12px;font-size:14px;border-radius:14px}
+input,textarea,select{font:inherit;color:var(--ink);width:100%;border:0;border-radius:18px;padding:13px 15px;background:var(--bg);box-shadow:var(--in);outline:none;transition:box-shadow .2s}
+input:focus,textarea:focus,select:focus{box-shadow:var(--in),0 0 0 3px rgba(255,107,66,.45)}
+button:focus-visible{outline:3px solid rgba(255,107,66,.6)}
+label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin:14px 4px 6px;text-transform:uppercase;letter-spacing:.06em}
+.lock{display:flex;flex-direction:column;justify-content:center;min-height:calc(100vh - 40px);max-width:380px;margin:0 auto;gap:14px;text-align:center}
+.logo{width:96px;height:96px;margin:0 auto 6px;border-radius:32px;background:linear-gradient(145deg,var(--a2),var(--a));box-shadow:var(--sh),inset 3px 3px 8px rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:40px;font-weight:900}
+.lock h2{margin:0;font-size:30px;letter-spacing:.08em}
+.lock p{margin:0 0 6px;color:var(--muted)}
+.err{color:var(--bad);font-weight:600;min-height:1.3em;font-size:14px}
+.search{display:flex;gap:10px;margin-bottom:12px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 12px;scrollbar-width:none}
+.chips button{flex:none;padding:7px 13px;font-size:14px;border-radius:99px}
+.chips button.on{color:#fff;background:linear-gradient(145deg,var(--a2),var(--a))}
+.list{display:flex;flex-direction:column;gap:14px}
+.note{padding:15px 17px;text-align:left;width:100%;display:block}
+.note h3{margin:0 0 4px;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note p{margin:0;color:var(--muted);font-weight:400;font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;font-size:12px;color:var(--muted);font-weight:600;align-items:center}
+.tag{background:#FFE1D4;color:#B8462A;padding:2px 9px;border-radius:99px}
+.empty{text-align:center;color:var(--muted);padding:40px 16px}
+.fab{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));width:64px;height:64px;border-radius:24px;font-size:32px;line-height:1;padding:0}
+.ed-title{font-size:22px;font-weight:800}
+.ed-body{min-height:42vh;resize:vertical;margin-top:12px}
+.files{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.file{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.file img{width:44px;height:44px;border-radius:12px;object-fit:cover;flex:none}
+.file .fi{width:44px;height:44px;border-radius:12px;background:#FFE1D4;display:flex;align-items:center;justify-content:center;flex:none;font-size:20px}
+.file span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.row>*{flex:1 1 auto}
+.card{padding:16px;margin-bottom:16px}
+.card h3{margin:0 0 4px;font-size:16px}
+.hint{color:var(--muted);font-size:13px;margin:6px 4px 0}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.toggle{width:58px;height:34px;border-radius:99px;padding:3px;background:var(--bg);box-shadow:var(--in);position:relative;flex:none}
+.toggle::after{content:"";position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;background:var(--card);box-shadow:2px 2px 5px rgba(205,128,98,.4);transition:left .2s}
+.toggle.on{background:linear-gradient(145deg,var(--a2),var(--a))}
+.toggle.on::after{left:28px}
+#viewer{position:fixed;inset:0;background:rgba(59,38,32,.88);display:flex;align-items:center;justify-content:center;padding:20px;z-index:20}
+#viewer img{max-width:100%;max-height:80vh;border-radius:18px}
+#viewer button{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:16px}
+#toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:16px;font-size:14px;font-weight:600;opacity:0;transition:opacity .25s;pointer-events:none;z-index:30;max-width:88vw;text-align:center}
+#toast.on{opacity:1}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<section class="view" id="v-lock">
+  <div class="lock">
+    <div class="logo">N</div>
+    <h2>NOTEZ</h2>
+    <p id="lockMsg">Dein Tresor ist gesperrt.</p>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="Master-Passwort">
+    <input id="pw2" type="password" autocomplete="new-password" placeholder="Passwort wiederholen" hidden>
+    <button class="pri" id="unlockBtn">Entsperren</button>
+    <button id="bioBtn" hidden>Mit Fingerabdruck entsperren</button>
+    <div class="err" id="lockErr" role="alert"></div>
+  </div>
+</section>
+
+<section class="view" id="v-list">
+  <div class="bar"><h1>Tresor</h1><button class="ic" id="toTrash" aria-label="Papierkorb">🗑</button><button class="ic" id="toSet" aria-label="Einstellungen">⚙︎</button></div>
+  <div class="search"><input id="q" type="search" placeholder="Notizen durchsuchen"><select id="sort" style="width:auto" aria-label="Sortierung"><option value="updated">Geändert</option><option value="created">Erstellt</option><option value="title">Titel A–Z</option></select></div>
+  <div class="chips" id="tags"></div>
+  <div class="list" id="notes"></div>
+  <button class="pri fab" id="newBtn" aria-label="Neue Notiz">+</button>
+</section>
+
+<section class="view" id="v-edit">
+  <div class="bar"><button class="ic" id="edBack" aria-label="Zurück">‹</button><h1><small id="edInfo"></small></h1><button class="ic bad" id="edDel" aria-label="In den Papierkorb">🗑</button></div>
+  <input id="edTitle" class="ed-title" placeholder="Titel">
+  <textarea id="edBody" class="ed-body" placeholder="Schreib los …"></textarea>
+  <label for="edTags">Tags</label>
+  <input id="edTags" placeholder="privat, arbeit, ideen">
+  <label>Anhänge</label>
+  <div class="files" id="edFiles"></div>
+  <div class="row"><button id="addFile">+ Bild oder Datei</button></div>
+  <input type="file" id="fileIn" multiple hidden>
+</section>
+
+<section class="view" id="v-trash">
+  <div class="bar"><button class="ic" id="trBack" aria-label="Zurück">‹</button><h1>Papierkorb</h1><button class="sm bad" id="trEmpty">Leeren</button></div>
+  <p class="hint" style="margin-bottom:14px">Gelöschte Notizen bleiben hier, bis du sie wiederherstellst oder endgültig löschst.</p>
+  <div class="list" id="trash"></div>
+</section>
+
+<section class="view" id="v-set">
+  <div class="bar"><button class="ic" id="setBack" aria-label="Zurück">‹</button><h1>Sicherheit</h1></div>
+  <div class="clay card">
+    <h3>Auto-Sperre</h3>
+    <select id="timeout"><option value="0">Sofort beim Verlassen</option><option value="30">Nach 30 Sekunden</option><option value="60">Nach 1 Minute</option><option value="300">Nach 5 Minuten</option><option value="900">Nach 15 Minuten</option></select>
+    <p class="hint">Gilt im Hintergrund und bei Inaktivität (mindestens 1 Minute im Vordergrund).</p>
+  </div>
+  <div class="clay card" id="bioCard">
+    <div class="sw"><div><h3>Biometrie</h3><p class="hint" id="bioHint" style="margin:0">Touch ID / Fingerabdruck zum Entsperren</p></div><button class="toggle" id="bioTgl" aria-label="Biometrie umschalten"></button></div>
+    <div id="bioConfirm" hidden><input id="bioPw" type="password" placeholder="Master-Passwort zur Bestätigung" style="margin-top:12px"><div class="row"><button class="pri" id="bioOk">Aktivieren</button></div></div>
+  </div>
+  <div class="clay card">
+    <h3>Master-Passwort ändern</h3>
+    <input id="cpOld" type="password" placeholder="Aktuelles Passwort" style="margin-top:8px">
+    <input id="cpNew" type="password" placeholder="Neues Passwort (mind. 8 Zeichen)" style="margin-top:10px">
+    <input id="cpNew2" type="password" placeholder="Neues Passwort wiederholen" style="margin-top:10px">
+    <div class="row"><button class="pri" id="cpBtn">Passwort ändern</button></div>
+  </div>
+  <div class="clay card">
+    <h3>Notfall-Export</h3>
+    <p class="hint" style="margin:0 0 8px">Verschlüsseltes Backup aller Notizen und Anhänge (AES-256-GCM).</p>
+    <input id="bkPw" type="password" placeholder="Backup-Passwort (mind. 8 Zeichen)">
+    <div class="row"><button class="pri" id="bkBtn">Backup erstellen</button><button id="rsBtn">Backup einspielen</button></div>
+    <input type="file" id="rsIn" accept=".notez,application/json" hidden>
+  </div>
+  <div class="row"><button id="lockNow">Jetzt sperren</button></div>
+</section>
+
+<div id="viewer" hidden><img id="viewImg" alt="Anhang"><button class="ic" id="viewClose" aria-label="Schließen">✕</button></div>
+<div id="toast" role="status"></div>
+
+<script>
+"use strict";
+var $ = function(s){ return document.getElementById(s); };
+var enc = new TextEncoder(), dec = new TextDecoder();
+var NATIVE = window.NotezNative || null;
+function b64(buf){ var b = new Uint8Array(buf), s = ""; for (var i = 0; i < b.length; i += 32768) s += String.fromCharCode.apply(null, b.subarray(i, i + 32768)); return btoa(s); }
+function unb64(s){ var r = atob(s), u = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) u[i] = r.charCodeAt(i); return u; }
+function rnd(n){ return crypto.getRandomValues(new Uint8Array(n)); }
+function uid(){ return b64(rnd(12)).replace(/[+/=]/g, "x"); }
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return "&#" + c.charCodeAt(0) + ";"; }); }
+function toast(t){ var e = $("toast"); e.textContent = t; e.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(function(){ e.classList.remove("on"); }, 2600); }
+function fmt(t){ return new Date(t).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" }); }
+
+/* ---------- Lokale Datenbank (IndexedDB, nur verschlüsselte Datensätze) ---------- */
+var dbp;
+function db(){ return dbp || (dbp = new Promise(function(res, rej){
+  var r = indexedDB.open("notez", 1);
+  r.onupgradeneeded = function(){ var d = r.result; ["meta", "notes", "files"].forEach(function(n){ d.createObjectStore(n); }); };
+  r.onsuccess = function(){ res(r.result); }; r.onerror = function(){ rej(r.error); };
+})); }
+function op(store, mode, fn){ return db().then(function(d){ return new Promise(function(res, rej){
+  var t = d.transaction(store, mode), r = fn(t.objectStore(store));
+  t.oncomplete = function(){ res(r && r.result); }; t.onerror = function(){ rej(t.error); }; t.onabort = function(){ rej(t.error); };
+}); }); }
+function get(s, k){ return op(s, "readonly", function(o){ return o.get(k); }); }
+function put(s, k, v){ return op(s, "readwrite", function(o){ return o.put(v, k); }); }
+function del(s, k){ return op(s, "readwrite", function(o){ return o.delete(k); }); }
+function all(s){ return op(s, "readonly", function(o){ return o.getAll(); }); }
+
+/* ---------- Kryptografie: PBKDF2-SHA256 -> KEK, zufälliger AES-256-GCM Datenschlüssel ---------- */
+var ITER = 250000, DEK = null, NOTES = [], SET = { timeout: 60, sort: "updated" };
+function kek(pw, salt){
+  return crypto.subtle.importKey("raw", enc.encode(pw), "PBKDF2", false, ["deriveKey"]).then(function(k){
+    return crypto.subtle.deriveKey({ name: "PBKDF2", salt: salt, iterations: ITER, hash: "SHA-256" }, k, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  });
+}
+function aesE(key, data){ var iv = rnd(12); return crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, data).then(function(ct){ return { iv: b64(iv), ct: new Uint8Array(ct) }; }); }
+function aesD(key, o){ return crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(o.iv) }, key, o.ct).then(function(p){ return new Uint8Array(p); }); }
+function importDek(raw){ return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]); }
+function wrapVault(pw, raw){ var salt = rnd(16); return kek(pw, salt).then(function(k){ return aesE(k, raw); }).then(function(w){ return put("meta", "vault", { salt: b64(salt), iv: w.iv, ct: w.ct, iter: ITER }); }); }
+function unwrapVault(pw){ return get("meta", "vault").then(function(v){ return kek(pw, unb64(v.salt)).then(function(k){ return aesD(k, v); }); }); }
+
+/* ---------- Biometrie: Android = Fingerabdruck (Keystore), iOS = Touch ID via WebAuthn ---------- */
+var bio = {
+  available: function(){
+    if (NATIVE) return Promise.resolve(!!NATIVE.bioAvailable());
+    try { return window.PublicKeyCredential ? PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable() : Promise.resolve(false); } catch (e) { return Promise.resolve(false); }
+  },
+  enabled: function(){ return NATIVE ? Promise.resolve(!!NATIVE.bioHas()) : get("meta", "bio").then(function(b){ return !!b; }); },
+  enroll: function(raw){
+    if (NATIVE) { NATIVE.bioStore(b64(raw)); return Promise.resolve(); }
+    return navigator.credentials.create({ publicKey: {
+      challenge: rnd(32), rp: { name: "NOTEZ" }, user: { id: rnd(16), name: "notez", displayName: "NOTEZ Tresor" },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" }, timeout: 60000 } })
+    .then(function(c){ return importDek(raw).then(function(k){ return put("meta", "bio", { cid: b64(c.rawId), key: k }); }); });
+  },
+  disable: function(){ if (NATIVE) { NATIVE.bioClear(); return Promise.resolve(); } return del("meta", "bio"); },
+  unlock: function(){
+    if (NATIVE) return new Promise(function(res, rej){
+      window.__bioResult = function(ok, v){ ok ? importDek(unb64(v)).then(res, rej) : rej(new Error(v)); };
+      NATIVE.bioUnlock();
+    });
+    return get("meta", "bio").then(function(b){
+      return navigator.credentials.get({ publicKey: { challenge: rnd(32), allowCredentials: [{ type: "public-key", id: unb64(b.cid) }], userVerification: "required", timeout: 60000 } })
+        .then(function(){ return b.key; });
+    });
+  }
+};
+
+/* ---------- Notizen ---------- */
+function loadNotes(){
+  return all("notes").then(function(rows){
+    return Promise.all(rows.map(function(r){ return aesD(DEK, r).then(function(p){ return JSON.parse(dec.decode(p)); }); }));
+  }).then(function(list){ NOTES = list; });
+}
+function saveNote(n){ return aesE(DEK, enc.encode(JSON.stringify(n))).then(function(e){ return put("notes", n.id, { id: n.id, iv: e.iv, ct: e.ct }); }); }
+function purge(n){
+  return Promise.all((n.files || []).map(function(f){ return del("files", f.id); })).then(function(){ return del("notes", n.id); })
+    .then(function(){ NOTES = NOTES.filter(function(x){ return x.id !== n.id; }); });
+}
+function enterVault(key){
+  DEK = key;
+  return get("meta", "settings").then(function(s){ if (s) SET = s; }).then(loadNotes).then(function(){ lastAct = Date.now(); show("list"); });
+}
+function saveSet(){ return put("meta", "settings", SET); }
+
+/* ---------- Navigation ---------- */
+var view = "lock", cur = null, tagF = null;
+function show(v){
+  view = v;
+  ["lock", "list", "edit", "trash", "set"].forEach(function(n){ $("v-" + n).classList.toggle("on", n === v); });
+  if (v === "list") renderList();
+  if (v === "trash") renderTrash();
+  if (v === "set") renderSet();
+  window.scrollTo(0, 0);
+}
+window.__back = function(){
+  if (!$("viewer").hidden) { closeViewer(); return true; }
+  if (view === "edit") { closeEditor(); return true; }
+  if (view === "trash" || view === "set") { show("list"); return true; }
+  return false;
+};
+
+/* ---------- Sperrbildschirm ---------- */
+var setupMode = false;
+function showLock(msg){
+  DEK = null; NOTES = []; cur = null; closeViewer();
+  $("pw").value = ""; $("pw2").value = ""; $("lockErr").textContent = "";
+  get("meta", "vault").then(function(v){
+    setupMode = !v;
+    $("pw2").hidden = !setupMode;
+    $("pw").autocomplete = setupMode ? "new-password" : "current-password";
+    $("lockMsg").textContent = setupMode ? "Lege ein Master-Passwort für deinen Tresor fest (mind. 8 Zeichen). Es lässt sich nicht wiederherstellen." : (msg || "Dein Tresor ist gesperrt.");
+    $("unlockBtn").textContent = setupMode ? "Tresor anlegen" : "Entsperren";
+    show("lock");
+    if (setupMode) { $("bioBtn").hidden = true; return; }
+    return Promise.all([bio.available(), bio.enabled()]).then(function(r){
+      $("bioBtn").hidden = !(r[0] && r[1]);
+      if (r[0] && r[1] && NATIVE) doBio();
+    });
+  });
+}
+function doBio(){
+  $("lockErr").textContent = "";
+  bio.unlock().then(enterVault).catch(function(e){ $("lockErr").textContent = "Biometrie fehlgeschlagen. Bitte Passwort nutzen."; });
+}
+$("bioBtn").onclick = doBio;
+$("unlockBtn").onclick = function(){
+  var pw = $("pw").value, err = $("lockErr"), btn = $("unlockBtn");
+  err.textContent = "";
+  if (setupMode) {
+    if (pw.length < 8) { err.textContent = "Mindestens 8 Zeichen."; return; }
+    if (pw !== $("pw2").value) { err.textContent = "Die Passwörter stimmen nicht überein."; return; }
+    btn.disabled = true; btn.textContent = "Wird angelegt …";
+    var raw = rnd(32);
+    wrapVault(pw, raw).then(function(){ return saveSet(); }).then(function(){ return importDek(raw); }).then(enterVault)
+      .catch(function(e){ err.textContent = "Fehler: " + e.message; }).then(function(){ btn.disabled = false; });
+    return;
+  }
+  if (!pw) { err.textContent = "Bitte Passwort eingeben."; return; }
+  btn.disabled = true; btn.textContent = "Prüfe …";
+  unwrapVault(pw).then(importDek).then(enterVault)
+    .catch(function(){ err.textContent = "Falsches Passwort."; })
+    .then(function(){ btn.disabled = false; btn.textContent = "Entsperren"; });
+};
+$("pw").onkeydown = $("pw2").onkeydown = function(e){ if (e.key === "Enter") $("unlockBtn").click(); };
+
+/* ---------- Übersicht ---------- */
+function snippet(n){ return (n.content || "").slice(0, 160) || ((n.files || []).length ? (n.files.length + " Anhang/Anhänge") : "Leere Notiz"); }
+function renderList(){
+  var q = $("q").value.trim().toLowerCase(), live = NOTES.filter(function(n){ return !n.deleted; });
+  var tags = {}; live.forEach(function(n){ (n.tags || []).forEach(function(t){ tags[t] = 1; }); });
+  var tl = Object.keys(tags).sort();
+  if (tagF && !tags[tagF]) tagF = null;
+  $("tags").innerHTML = tl.length ? ["<button data-t=''" + (tagF ? "" : " class='on'") + ">Alle</button>"].concat(tl.map(function(t){ return "<button data-t='" + esc(t) + "'" + (t === tagF ? " class='on'" : "") + ">#" + esc(t) + "</button>"; })).join("") : "";
+  var list = live.filter(function(n){
+    if (tagF && (n.tags || []).indexOf(tagF) < 0) return false;
+    if (!q) return true;
+    return ((n.title || "") + " " + (n.content || "") + " " + (n.tags || []).join(" ")).toLowerCase().indexOf(q) >= 0;
+  });
+  var s = SET.sort;
+  list.sort(function(a, b){ return s === "title" ? (a.title || "").localeCompare(b.title || "", "de") : b[s] - a[s]; });
+  $("sort").value = s;
+  $("notes").innerHTML = list.length ? list.map(function(n){
+    return "<button class='clay note' data-id='" + n.id + "'><h3>" + esc(n.title || "Ohne Titel") + "</h3><p>" + esc(snippet(n)) + "</p><div class='meta'><span>" + fmt(n.updated) + "</span>" +
+      ((n.files || []).length ? "<span>📎 " + n.files.length + "</span>" : "") + (n.tags || []).map(function(t){ return "<span class='tag'>#" + esc(t) + "</span>"; }).join("") + "</div></button>";
+  }).join("") : "<div class='empty'>" + (live.length ? "Keine Treffer." : "Noch keine Notizen. Tippe auf +, um die erste anzulegen.") + "</div>";
+}
+$("q").oninput = renderList;
+$("sort").onchange = function(){ SET.sort = this.value; saveSet(); renderList(); };
+$("tags").onclick = function(e){ var b = e.target.closest("button"); if (!b) return; tagF = b.getAttribute("data-t") || null; renderList(); };
+$("notes").onclick = function(e){ var b = e.target.closest(".note"); if (b) openEditor(NOTES.find(function(n){ return n.id === b.getAttribute("data-id"); }), false); };
+$("newBtn").onclick = function(){ var t = Date.now(); openEditor({ id: uid(), title: "", content: "", tags: [], created: t, updated: t, files: [], deleted: null }, true); };
+$("toTrash").onclick = function(){ show("trash"); };
+$("toSet").onclick = function(){ show("set"); };
+
+/* ---------- Editor ---------- */
+var saveT = null, isNew = false;
+function openEditor(n, fresh){
+  cur = n; isNew = fresh;
+  $("edTitle").value = n.title; $("edBody").value = n.content; $("edTags").value = (n.tags || []).join(", ");
+  $("edInfo").textContent = fresh ? "Neue Notiz" : "Geändert " + fmt(n.updated);
+  renderFiles(); show("edit");
+  (fresh ? $("edTitle") : $("edBody")).focus();
+}
+function readEditor(){
+  cur.title = $("edTitle").value.trim(); cur.content = $("edBody").value;
+  cur.tags = $("edTags").value.split(",").map(function(t){ return t.trim().toLowerCase(); }).filter(function(t, i, a){ return t && a.indexOf(t) === i; });
+}
+function isEmpty(n){ return !n.title && !n.content.trim() && !(n.files || []).length; }
+function persistCur(){
+  if (!cur) return Promise.resolve();
+  readEditor();
+  if (isNew && isEmpty(cur)) return Promise.resolve();
+  cur.updated = Date.now();
+  if (NOTES.indexOf(cur) < 0) NOTES.push(cur);
+  isNew = false;
+  $("edInfo").textContent = "Gespeichert " + fmt(cur.updated);
+  return saveNote(cur);
+}
+function schedule(){ clearTimeout(saveT); saveT = setTimeout(persistCur, 500); }
+["edTitle", "edBody", "edTags"].forEach(function(id){ $(id).oninput = schedule; });
+function closeEditor(){ clearTimeout(saveT); persistCur().then(function(){ cur = null; show("list"); }); }
+$("edBack").onclick = closeEditor;
+$("edDel").onclick = function(){
+  clearTimeout(saveT); readEditor();
+  if (isNew && isEmpty(cur)) { cur = null; show("list"); return; }
+  cur.deleted = Date.now(); cur.updated = cur.updated || Date.now();
+  if (NOTES.indexOf(cur) < 0) NOTES.push(cur);
+  saveNote(cur).then(function(){ cur = null; show("list"); toast("In den Papierkorb verschoben"); });
+};
+function renderFiles(){
+  var f = cur.files || [];
+  $("edFiles").innerHTML = f.length ? f.map(function(x, i){
+    return "<div class='clay file' data-i='" + i + "'><div class='fi' data-thumb='" + x.id + "'>" + (/^image\//.test(x.type) ? "🖼" : "📄") + "</div><span>" + esc(x.name) + "<br><small style='color:var(--muted);font-weight:400'>" + Math.max(1, Math.round(x.size / 1024)) + " KB</small></span>" +
+      "<button class='sm' data-a='open'>Öffnen</button><button class='sm bad' data-a='rm' aria-label='Anhang entfernen'>✕</button></div>";
+  }).join("") : "<p class='hint'>Keine Anhänge. Alles wird beim Hinzufügen sofort verschlüsselt.</p>";
+  f.forEach(function(x){
+    if (!/^image\//.test(x.type)) return;
+    readFile(x).then(function(d){ var el = document.querySelector("[data-thumb='" + x.id + "']"); if (el) el.outerHTML = "<img src='" + URL.createObjectURL(new Blob([d], { type: x.type })) + "' alt=''>"; });
+  });
+}
+function readFile(x){ return get("files", x.id).then(function(r){ return aesD(DEK, r); }); }
+$("addFile").onclick = function(){ $("fileIn").click(); };
+$("fileIn").onchange = function(){
+  var files = Array.prototype.slice.call(this.files); this.value = "";
+  if (!files.length) return;
+  toast("Verschlüssele " + files.length + " Datei(en) …");
+  files.reduce(function(p, file){
+    return p.then(function(){ return file.arrayBuffer(); }).then(function(buf){ return aesE(DEK, buf); }).then(function(e){
+      var id = uid(); cur.files.push({ id: id, name: file.name || "Datei", type: file.type || "application/octet-stream", size: file.size });
+      return put("files", id, { id: id, iv: e.iv, ct: e.ct });
+    });
+  }, Promise.resolve()).then(persistCur).then(function(){ renderFiles(); toast("Anhang verschlüsselt gespeichert"); })
+    .catch(function(e){ toast("Fehler: " + e.message); });
+};
+$("edFiles").onclick = function(e){
+  var b = e.target.closest("button"); if (!b) return;
+  var i = +b.closest(".file").getAttribute("data-i"), x = cur.files[i];
+  if (b.getAttribute("data-a") === "rm") {
+    if (b.textContent !== "Sicher?") { b.textContent = "Sicher?"; return; }
+    cur.files.splice(i, 1); del("files", x.id).then(persistCur).then(renderFiles); return;
+  }
+  readFile(x).then(function(d){
+    if (/^image\//.test(x.type)) { $("viewImg").src = URL.createObjectURL(new Blob([d], { type: x.type })); $("viewer").hidden = false; }
+    else saveOut(x.name, x.type, d);
+  });
+};
+function closeViewer(){ $("viewer").hidden = true; if ($("viewImg").src) { URL.revokeObjectURL($("viewImg").src); $("viewImg").removeAttribute("src"); } }
+$("viewClose").onclick = closeViewer;
+
+function saveOut(name, type, bytes){
+  if (NATIVE) { NATIVE.saveFile(name, type, b64(bytes)); return; }
+  var file; try { file = new File([bytes], name, { type: type }); } catch (e) {}
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: name }).catch(function(){}); return; }
+  var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([bytes], { type: type })); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+}
+
+/* ---------- Papierkorb ---------- */
+function renderTrash(){
+  var list = NOTES.filter(function(n){ return n.deleted; }).sort(function(a, b){ return b.deleted - a.deleted; });
+  $("trEmpty").hidden = !list.length;
+  $("trash").innerHTML = list.length ? list.map(function(n){
+    return "<div class='clay note' data-id='" + n.id + "'><h3>" + esc(n.title || "Ohne Titel") + "</h3><p>" + esc(snippet(n)) + "</p><div class='meta'><span>Gelöscht " + fmt(n.deleted) + "</span>" +
+      ((n.files || []).length ? "<span>📎 " + n.files.length + "</span>" : "") + "</div><div class='row'><button class='sm pri' data-a='restore'>Wiederherstellen</button><button class='sm bad' data-a='kill'>Endgültig löschen</button></div></div>";
+  }).join("") : "<div class='empty'>Der Papierkorb ist leer.</div>";
+}
+$("trash").onclick = function(e){
+  var b = e.target.closest("button"); if (!b) return;
+  var n = NOTES.find(function(x){ return x.id === b.closest(".note").getAttribute("data-id"); });
+  if (b.getAttribute("data-a") === "restore") { n.deleted = null; saveNote(n).then(function(){ renderTrash(); toast("Wiederhergestellt"); }); return; }
+  if (b.textContent !== "Wirklich löschen?") { b.textContent = "Wirklich löschen?"; return; }
+  purge(n).then(function(){ renderTrash(); toast("Endgültig gelöscht"); });
+};
+$("trEmpty").onclick = function(){
+  var b = this; if (b.textContent !== "Sicher?") { b.textContent = "Sicher?"; setTimeout(function(){ b.textContent = "Leeren"; }, 3000); return; }
+  b.textContent = "Leeren";
+  Promise.all(NOTES.filter(function(n){ return n.deleted; }).map(purge)).then(function(){ renderTrash(); toast("Papierkorb geleert"); });
+};
+$("trBack").onclick = function(){ show("list"); };
+
+/* ---------- Einstellungen ---------- */
+function renderSet(){
+  $("timeout").value = String(SET.timeout);
+  $("bioConfirm").hidden = true; $("bioPw").value = "";
+  Promise.all([bio.available(), bio.enabled()]).then(function(r){
+    $("bioTgl").classList.toggle("on", r[1]); $("bioTgl").disabled = !r[0] && !r[1];
+    $("bioHint").textContent = r[0] ? (NATIVE ? "Fingerabdruck zum Entsperren" : "Touch ID zum Entsperren") : "Auf diesem Gerät nicht verfügbar";
+  });
+}
+$("setBack").onclick = function(){ show("list"); };
+$("timeout").onchange = function(){ SET.timeout = +this.value; saveSet(); toast("Auto-Sperre gespeichert"); };
+$("bioTgl").onclick = function(){
+  if (this.classList.contains("on")) { bio.disable().then(renderSet).then(function(){ toast("Biometrie deaktiviert"); }); return; }
+  $("bioConfirm").hidden = false; $("bioPw").focus();
+};
+$("bioOk").onclick = function(){
+  unwrapVault($("bioPw").value).then(function(raw){ return bio.enroll(raw); })
+    .then(function(){ renderSet(); toast("Biometrie aktiviert"); })
+    .catch(function(e){ toast(e && e.name === "OperationError" ? "Falsches Passwort" : "Aktivierung abgebrochen"); });
+};
+$("cpBtn").onclick = function(){
+  var o = $("cpOld").value, n = $("cpNew").value;
+  if (n.length < 8) { toast("Neues Passwort: mindestens 8 Zeichen"); return; }
+  if (n !== $("cpNew2").value) { toast("Neue Passwörter stimmen nicht überein"); return; }
+  unwrapVault(o).then(function(raw){ return wrapVault(n, raw); })
+    .then(function(){ ["cpOld", "cpNew", "cpNew2"].forEach(function(i){ $(i).value = ""; }); toast("Master-Passwort geändert"); })
+    .catch(function(){ toast("Aktuelles Passwort ist falsch"); });
+};
+$("bkBtn").onclick = function(){
+  var pw = $("bkPw").value; if (pw.length < 8) { toast("Backup-Passwort: mindestens 8 Zeichen"); return; }
+  toast("Backup wird erstellt …");
+  var files = {};
+  Promise.all(NOTES.map(function(n){ return Promise.all((n.files || []).map(function(f){ return readFile(f).then(function(d){ files[f.id] = b64(d); }); })); }))
+    .then(function(){
+      var plain = enc.encode(JSON.stringify({ notes: NOTES, files: files, created: Date.now() })), salt = rnd(16);
+      return kek(pw, salt).then(function(k){ return aesE(k, plain); }).then(function(e){
+        var pack = JSON.stringify({ app: "NOTEZ", v: 1, kdf: "PBKDF2-SHA256", iter: ITER, cipher: "AES-256-GCM", salt: b64(salt), iv: e.iv, ct: b64(e.ct) });
+        var d = new Date().toISOString().slice(0, 10);
+        saveOut("NOTEZ-Backup-" + d + ".notez", "application/json", enc.encode(pack));
+        $("bkPw").value = "";
+      });
+    }).catch(function(e){ toast("Fehler: " + e.message); });
+};
+$("rsBtn").onclick = function(){ if ($("bkPw").value.length < 8) { toast("Erst das Backup-Passwort eingeben"); return; } $("rsIn").click(); };
+$("rsIn").onchange = function(){
+  var f = this.files[0], pw = $("bkPw").value; this.value = ""; if (!f) return;
+  f.text().then(function(t){
+    var p = JSON.parse(t); if (p.app !== "NOTEZ") throw new Error("Keine NOTEZ-Datei");
+    return kek(pw, unb64(p.salt)).then(function(k){ return aesD(k, { iv: p.iv, ct: unb64(p.ct) }); });
+  }).then(function(plain){
+    var data = JSON.parse(dec.decode(plain)), have = {}, added = 0;
+    NOTES.forEach(function(n){ have[n.id] = 1; });
+    return data.notes.filter(function(n){ return !have[n.id]; }).reduce(function(p, n){
+      return p.then(function(){
+        return Promise.all((n.files || []).map(function(x){ return data.files[x.id] ? aesE(DEK, unb64(data.files[x.id])).then(function(e){ return put("files", x.id, { id: x.id, iv: e.iv, ct: e.ct }); }) : null; }));
+      }).then(function(){ NOTES.push(n); added++; return saveNote(n); });
+    }, Promise.resolve()).then(function(){ $("bkPw").value = ""; toast(added + " Notiz(en) wiederhergestellt"); });
+  }).catch(function(e){ toast(e.name === "OperationError" ? "Falsches Backup-Passwort" : "Backup ungültig: " + e.message); });
+};
+$("lockNow").onclick = function(){ showLock(); };
+
+/* ---------- Auto-Sperre ---------- */
+var hiddenAt = 0, lastAct = Date.now();
+function onHide(){ if (!DEK) return; persistCur(); hiddenAt = Date.now(); if (SET.timeout === 0) showLock("Automatisch gesperrt."); }
+function onShow(){ if (DEK && hiddenAt && Date.now() - hiddenAt >= SET.timeout * 1000) showLock("Automatisch gesperrt."); hiddenAt = 0; }
+window.__appHidden = onHide; window.__appVisible = onShow;
+document.addEventListener("visibilitychange", function(){ document.hidden ? onHide() : onShow(); });
+window.addEventListener("pagehide", onHide);
+["pointerdown", "keydown", "input", "touchstart"].forEach(function(ev){ window.addEventListener(ev, function(){ lastAct = Date.now(); }, true); });
+setInterval(function(){ if (DEK && !document.hidden && Date.now() - lastAct > Math.max(SET.timeout, 60) * 1000) { persistCur(); showLock("Wegen Inaktivität gesperrt."); } }, 5000);
+
+/* ---------- Start ---------- */
+if (!window.crypto || !crypto.subtle || !window.indexedDB) {
+  document.body.innerHTML = "<div class='lock' style='padding:24px'><div class='logo'>N</div><h2>NOTEZ</h2><p>Dieses Gerät unterstützt die nötige Verschlüsselung nicht. Bitte System-WebView bzw. iOS aktualisieren.</p></div>";
+} else {
+  showLock();
+  if (!NATIVE && "serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(function(){});
+}
+</script>
+</body>
+</html>
